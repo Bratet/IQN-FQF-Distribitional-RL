@@ -147,7 +147,6 @@ if __name__ == "__main__":
     n_step = iqn_config.n_step
     env_name = iqn_config.env
     device = torch.device("cpu")
-    print("Using ", device)
 
     np.random.seed(seed)
     random.seed(seed)
@@ -183,38 +182,40 @@ if __name__ == "__main__":
 
 
     eps_fixed = False
+    
+    print("Training IQN Agent")
 
     t0 = time.time()
     run(frames = iqn_config.frames//iqn_config.worker, eps_fixed=eps_fixed, eps_frames=iqn_config.eps_frames//iqn_config.worker, min_eps=iqn_config.min_eps, eval_every=iqn_config.eval_every//iqn_config.worker, eval_runs=iqn_config.eval_runs, worker=iqn_config.worker)
     t1 = time.time()
     
-    print("Training time: {}min".format(round((t1-t0)/60,2)))
+    print("\n Training time: {}min".format(round((t1-t0)/60,2)))
     if iqn_config.save_model:
         torch.save(agent.qnetwork_local.state_dict(), iqn_config.info+".pth")
 
 
-    writer = SummaryWriter("runs/"+iqn_config.info)     
+    writer = SummaryWriter("runs/"+fqf_config.info)     
     torch.autograd.set_detect_anomaly(True)
-    env_name = iqn_config.env
-    seed = iqn_config.seed
-    BUFFER_SIZE = iqn_config.memory_size
-    BATCH_SIZE = iqn_config.batch_size
-    GAMMA = iqn_config.gamma
-    TAU = iqn_config.tau
-    LR = iqn_config.lr
-    n_step = iqn_config.n_step
+    env_name = fqf_config.env
+    seed = fqf_config.seed
+    BUFFER_SIZE = fqf_config.memory_size
+    BATCH_SIZE = fqf_config.batch_size
+    GAMMA = fqf_config.gamma
+    TAU = fqf_config.tau
+    LR = fqf_config.lr
+    n_step = fqf_config.n_step
     device = torch.device("cpu")
-    print("Using ", device)
+    
 
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
-    if "-ram" in iqn_config.env or iqn_config.env == "CartPole-v0" or iqn_config.env == "LunarLander-v2": 
-        envs = multipro.SubprocVecEnv([lambda: gym.make(iqn_config.env) for i in range(iqn_config.worker)])
-        eval_env = gym.make(iqn_config.env)
+    if "-ram" in fqf_config.env or fqf_config.env == "CartPole-v0" or fqf_config.env == "LunarLander-v2": 
+        envs = multipro.SubprocVecEnv([lambda: gym.make(fqf_config.env) for i in range(fqf_config.worker)])
+        eval_env = gym.make(fqf_config.env)
     else:
-        envs = multipro.SubprocVecEnv([lambda: wrapper.make_env(iqn_config.env) for i in range(iqn_config.worker)])
-        eval_env = wrapper.make_env(iqn_config.env)   
+        envs = multipro.SubprocVecEnv([lambda: wrapper.make_env(fqf_config.env) for i in range(fqf_config.worker)])
+        eval_env = wrapper.make_env(fqf_config.env)   
     envs.seed(seed)
     eval_env.seed(seed+1)
     action_size = eval_env.action_space.n
@@ -222,28 +223,30 @@ if __name__ == "__main__":
 
     agent = FQF_Agent(state_size=state_size,    
                         action_size=action_size,
-                        network=iqn_config.agent,
-                        layer_size=iqn_config.layer_size,
+                        network=fqf_config.agent,
+                        layer_size=fqf_config.layer_size,
                         n_step=n_step,
                         BATCH_SIZE=BATCH_SIZE, 
                         BUFFER_SIZE=BUFFER_SIZE, 
                         LR=LR, 
                         TAU=TAU, 
                         GAMMA=GAMMA,
-                        Munchausen=iqn_config.munchausen,
-                        N=iqn_config.N,
-                        entropy_coeff=iqn_config.entropy_coeff,
-                        worker=iqn_config.worker,
+                        Munchausen=fqf_config.munchausen,
+                        N=fqf_config.N,
+                        entropy_coeff=fqf_config.entropy_coeff,
+                        worker=fqf_config.worker,
                         device=device, 
                         seed=seed)
 
 
     eps_fixed = False
+    
+    print("Training FQF Agent")
 
     t0 = time.time()
-    run(frames = iqn_config.frames//iqn_config.worker, eps_fixed=eps_fixed, eps_frames=iqn_config.eps_frames//iqn_config.worker, min_eps=iqn_config.min_eps, eval_every=iqn_config.eval_every//iqn_config.worker, eval_runs=iqn_config.eval_runs, worker=iqn_config.worker)
+    run(frames = fqf_config.frames//fqf_config.worker, eps_fixed=eps_fixed, eps_frames=fqf_config.eps_frames//fqf_config.worker, min_eps=fqf_config.min_eps, eval_every=fqf_config.eval_every//fqf_config.worker, eval_runs=fqf_config.eval_runs, worker=fqf_config.worker)
     t1 = time.time()
 
-    print("Training time: {}min".format(round((t1-t0)/60,2)))
-    if iqn_config.save_model:
-        torch.save(agent.qnetwork_local.state_dict(), iqn_config.info+".pth")
+    print("\nTraining time: {}min".format(round((t1-t0)/60,2)))
+    if fqf_config.save_model:
+        torch.save(agent.qnetwork_local.state_dict(), fqf_config.info+".pth")
